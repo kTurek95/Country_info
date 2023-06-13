@@ -1,6 +1,42 @@
 from matplotlib import pyplot as plt, ticker
 import sqlite3
 import requests
+from sys import argv
+
+
+def main():
+    try:
+        with sqlite3.connect('Countries_and_capitals.db') as connection:
+            if len(argv) == 2 and argv[1] == 'setup':
+                initialize(connection)
+                with sqlite3.connect('Continent_table.db') as connection1:
+                    continent_table(connection1)
+    except sqlite3.OperationalError:
+        print('Tabela już istnieje')
+
+    while True:
+        try:
+            country = input('Podaj nazwę kraju lub napisz "koniec" żeby zakończyć: ')
+            if country == 'koniec':
+                give_chart()
+                break
+
+            countries_dict = save_country_and_capital(country)
+            try:
+                row = check_if_country_in_db(connection, countries_dict[country], countries_dict['Population'])
+                if row is None:
+                    try:
+                        add_country(connection, country)
+                    except UnboundLocalError:
+                        pass
+                    print(f'Dodano {country} do bazy danych')
+                else:
+                    print(f'{country} jest już w bazie danych')
+            except KeyError:
+                pass
+        except sqlite3.OperationalError:
+            print('Nie posiadasz tabeli, do której możesz dodać dane')
+            break
 
 
 def initialize(db_connection):
@@ -105,3 +141,22 @@ def give_chart():
     plt.gca().yaxis.set_major_formatter(formatter)
     plt.savefig('Populacja w danym kraju')
     plt.show()
+
+
+def continent_table(db_connection):
+    table1 = '''CREATE TABLE Continent_table(
+    query_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    country VARCHAR,
+    continent VARCHAR,
+    country_language VARCHAR)'''
+
+    cursor = db_connection.cursor()
+    cursor.execute(table1)
+    db_connection.commit()
+
+
+def add_country_to_continent(db_connection):
+    pass
+
+# następna opcja w tym programie to stworzenie tabeli z kontynentami i połączenie jej z tabelą główną
+# czyli jeżeli kraj o id 1 (hiszpania) w naszym api == europa to dodajemy ja do tabeli do kontynentu europa itd...
