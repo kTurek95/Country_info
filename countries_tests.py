@@ -1,6 +1,6 @@
 import sqlite3
 
-from countries_function import get_info_from_db
+from countries_function import get_info_from_db, check_if_country_in_db
 
 
 def create_database():
@@ -51,3 +51,13 @@ def test_get_info_from_db_test():
 
     remove_database()
     assert fetched_data == expected_returns
+    assert len(fetched_data) == 5
+
+
+def test_check_if_country_in_db():
+    create_database()
+    db_connection = sqlite3.connect('information.db')
+
+    remove_database()
+    assert check_if_country_in_db(db_connection, 'Lisbon', 10305564) == ('Portugal',)
+    assert check_if_country_in_db(db_connection, 'Tallin', 1331057) is None
