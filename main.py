@@ -1,11 +1,19 @@
+""" Main module """
+
 import sqlite3
 from sys import argv
 
 from countries_function import initialize, continent_table, give_chart, save_country_and_capital, \
-    check_if_country_in_db, add_country
+    check_if_country_in_db, add_country, add_country_to_continent
 
 
 def main():
+    """
+    This function serves as the main entry point of the program
+    for managing a database of countries and capitals.
+    The program provides feedback to the user during the execution
+    and can display a chart of the data.
+    """
     try:
         with sqlite3.connect('Countries_and_capitals.db') as connection:
             if len(argv) == 2 and argv[1] == 'setup':
@@ -20,10 +28,14 @@ def main():
             country = input('Enter the name of the country or type "end" to finish: ')
             if country == 'end':
                 give_chart()
+                print(add_country_to_continent(connection))
                 break
             countries_dict = save_country_and_capital(country)
             try:
-                row = check_if_country_in_db(connection, countries_dict[country], countries_dict['Population'])
+                row = \
+                    check_if_country_in_db(
+                        connection, countries_dict[country], countries_dict['Population']
+                    )
                 if row is None:
                     try:
                         add_country(connection, country)
