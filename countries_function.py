@@ -1,9 +1,20 @@
-from matplotlib import pyplot as plt, ticker
+""" Module with all necessary function to run main module"""
+
 import sqlite3
+from matplotlib import pyplot as plt, ticker
 import requests
 
 
 def initialize(db_connection):
+    """
+    Initializes the 'Countries_and_capitals' table in a given SQLite database connection.
+
+    Args:
+        db_connection: An SQLite database connection.
+
+    This function creates the table structure for storing information about countries, capitals, and populations.
+    It does not return any value but commits the changes to the database.
+    """
     table = '''CREATE TABLE Countries_and_capitals(
     query_id INTEGER PRIMARY KEY AUTOINCREMENT,
     country VARCHAR,
@@ -17,6 +28,18 @@ def initialize(db_connection):
 
 
 def get_info_from_db(db_connection):
+    """
+    Retrieves country names and populations from the 'Countries_and_capitals' table in the database.
+
+    Args:
+        db_connection: An SQLite database connection.
+
+    Returns:
+        A list of tuples containing country names and populations.
+
+    This function executes a SQL query to select the relevant data from the database
+    and returns the retrieved rows as a list of tuples.
+    """
     cursor = db_connection.cursor()
     result = cursor.execute(
         'SELECT country, population FROM Countries_and_capitals'
@@ -27,7 +50,19 @@ def get_info_from_db(db_connection):
 
 
 def save_country_and_capital(country: str) -> dict:
-    countries_capitals = dict()
+    """
+    Retrieves information about a country from an online source and returns it as a dictionary.
+
+    Args:
+        country: The name of the country.
+
+    Returns:
+        A dictionary containing the country name, capital, and population (if found).
+
+    This function makes an HTTP request to an online API to fetch information about the given country.
+    It handles potential errors and returns the retrieved data in a dictionary format.
+    """
+    countries_capitals = {}
     response = requests.get('https://restcountries.com/v3.1/all')
     found = False
 
@@ -38,22 +73,32 @@ def save_country_and_capital(country: str) -> dict:
                 countries_capitals['Population'] = row['population']
                 found = True
                 break
-            elif row['name']['common'] != country:
+            if row['name']['common'] != country:
                 found = False
         if not found:
-            raise ValueError('Nie mamy takiego państwa w bazie danych.')
+            raise ValueError('We don"t have such a country in our database.')
 
     except KeyError:
-        print('Podane państwo nie ma stolicy.')
+        print('The given country doesn"t have a capital.')
     except ValueError as message:
         print(message)
     except requests.exceptions.ConnectionError:
-        print('Nie ma dostępu do internetu')
+        print('There is no internet access')
 
     return countries_capitals
 
 
 def add_country(db_connection, country: str):
+    """
+    Adds information about a country to the 'Countries_and_capitals' table in the database.
+
+    Args:
+        db_connection: An SQLite database connection.
+        country: The name of the country to be added.
+
+    This function adds a new record to the database with the country's name, capital, and population
+    by calling the 'save_country_and_capital' function. It then commits the changes to the database.
+    """
     countries_capitals = save_country_and_capital(country)
 
     for countries, cities in countries_capitals.items():
@@ -62,25 +107,48 @@ def add_country(db_connection, country: str):
     population = countries_capitals.get('Population')
 
     cursor = db_connection.cursor()
-    cursor.execute('INSERT INTO Countries_and_capitals(country, capital, population) VALUES(?, ?, ?)', (
-        country,
-        capital,
-        population
+    cursor.execute('INSERT INTO Countries_and_capitals'
+                   '(country, capital, population) VALUES(?, ?, ?)',
+                   (
+                    country,
+                    capital,
+                    population
     ))
 
     db_connection.commit()
 
 
 def check_if_country_in_db(db_connection, location: str, number: int):
+    """
+    Checks if a country with a specific capital and population exists in the database.
+
+    Args:
+        db_connection: An SQLite database connection.
+        location: The capital of the country to be checked.
+        number: The population of the country to be checked.
+
+    Returns:
+        A tuple containing the name of the country if found, or None if not found.
+
+    This function executes a SQL query to search for a record matching the given capital and population
+    in the 'Countries_and_capitals' table of the database and returns the result.
+    """
     cursor = db_connection.cursor()
     result = cursor.execute(
-        'SELECT country FROM Countries_and_capitals WHERE capital=? AND population=?', (location, number)
+        'SELECT country FROM Countries_and_capitals'
+        ' WHERE capital=? AND population=?', (location, number)
     )
 
     return result.fetchone()
 
 
 def give_chart():
+    """
+    Generates and displays a bar chart of country populations using data from the database.
+
+    This function retrieves data from the 'Countries_and_capitals' table, creates a bar chart,
+    and displays it using Matplotlib. It also handles formatting of the chart.
+    """
     countries = []
     populations = []
 
@@ -108,6 +176,15 @@ def give_chart():
 
 
 def continent_table(db_connection):
+    """
+    Initializes the 'Continent_table' table in a given SQLite database connection.
+
+    Args:
+        db_connection: An SQLite database connection.
+
+    This function creates the table structure for storing information about countries, continents, and languages.
+    It does not return any value but commits the changes to the database.
+    """
     table1 = '''CREATE TABLE Continent_table(
     query_id INTEGER PRIMARY KEY AUTOINCREMENT,
     country VARCHAR,
@@ -119,8 +196,11 @@ def continent_table(db_connection):
     db_connection.commit()
 
 
-def add_country_to_continent():
+def add_country_to_continent(db_connection):
     pass
 
-# następna opcja w tym programie to stworzenie tabeli z kontynentami i połączenie jej z tabelą główną
-# czyli jeżeli kraj o id 1 (hiszpania) w naszym api == europa to dodajemy ja do tabeli do kontynentu europa itd...
+
+# następna opcja w tym programie to stworzenie tabeli z kontynentami
+# i połączenie jej z tabelą główną
+# czyli jeżeli kraj o id 1 (hiszpania) w naszym api == europa
+# to dodajemy ja do tabeli do kontynentu europa itd...
